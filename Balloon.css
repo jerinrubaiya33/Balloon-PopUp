@@ -1,0 +1,358 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    font-family: 'Fredoka One', cursive;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+  
+  #game-container {
+    width: 100vw;
+    height: 115dvh;
+    position: relative;
+    background: url('https://jerinrubaiya33.github.io/Pics/Balloon%20sky.png') no-repeat center center fixed;
+    background-size: cover;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  
+  #game-over.hidden, #start-screen.hidden {
+    display: none;
+  }/* RAIN ANIMATION */
+  @keyframes rain {
+    0% {
+        transform: translateY(-100%);
+    }
+    100% {
+        transform: translateY(100vh);
+    }
+  }
+  
+  .rain-drop {
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.788);
+    animation: rain 1s linear infinite;
+    pointer-events: none;
+  }
+  
+  #rain-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    top: 0;
+    left: 0;
+  }
+  
+  /* THUNDERSTORM */
+  .thunderstorm {
+    position: absolute;
+    width: 160px;
+    height: 200px;
+    background-image: url('https://jerinrubaiya33.github.io/Pics/Glasses%20Thund.png');
+    background-size: 100% 100%; /* Stretch the image to fit the full element */
+    background-position: center;
+    pointer-events: none;
+    animation: thunderstorm-move 8s linear infinite;
+  }
+  
+  @keyframes thunderstorm-move {
+    0% {
+        top: -50px;
+        left: 0;
+    }
+    25% {
+        left: calc(100% - 100px);
+    }
+    50% {
+        top: calc(100% - 100px);
+        left: 50%;
+    }
+    75% {
+        left: 0;
+    }
+    100% {
+        top: -50px;
+        left: 0;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .thunderstorm {
+      width: 100px;
+      height: 130px;
+      background-size: 100% 100%;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    #game-container {
+      background-size: cover;
+      background-position: center top;
+      height: 100vh;
+    }
+  }
+  
+  
+  #balloon-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .balloon {
+    position: absolute;
+    width: clamp(40px, 8vw, 65px);
+    height: clamp(50px, 10vw, 81.25px);
+    cursor: pointer;
+    transition: transform 0.1s;
+    animation: float var(--float-duration) linear forwards;
+    touch-action: manipulation;
+  }
+  
+  .balloon::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: var(--balloon-color);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3);
+  }
+  
+  .balloon::after {
+    content: '';
+    position: absolute;
+    width: clamp(2px, 0.5vw, 4px);
+    height: clamp(10px, 2.5vw, 15px);
+    background: #fff;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 2px;
+  }
+  
+  @keyframes float {
+    0% {
+      transform: translateY(120vh) rotate(0deg);
+    }
+    100% {
+      transform: translateY(-20vh) rotate(var(--rotation));
+    }
+  }
+  
+  .balloon.popping {
+    animation: pop 0.3s ease-out forwards;
+  }
+  
+  @keyframes pop {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(2); opacity: 0.5; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+  
+  .particle {
+    position: absolute;
+    width: clamp(8px, 2vw, 16px);
+    height: clamp(8px, 2vw, 16px);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particle 1s ease-out forwards;
+  }
+  
+  @keyframes particle {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--tx), var(--ty)) scale(0);
+    }
+  }
+  
+  #hud {
+    position: fixed;
+    top: env(safe-area-inset-top, 0);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    font-family: 'Fredoka One', cursive;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(196, 196, 196, 0.082);
+    padding: clamp(8px, 2vw, 20px);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    width: min(90%, 500px);
+    margin: 10px auto;
+  }
+  
+  #hud #score {
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    color: orange;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+    margin-bottom: 10px;
+  }
+  
+  .overlay {
+    width: 100vw;
+    height: 115dvh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-image: url('https://jerinrubaiya33.github.io/Pics/Balloongame.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  
+  @media (max-width: 768px) {
+    .overlay {
+      background-image: url('https://jerinrubaiya33.github.io/Pics/Balloonmobile.png');
+      background-size: cover;
+      background-position: center;
+    }
+  }
+  
+  button {
+    padding: clamp(12px, 3vw, 19px) clamp(40px, 8vw, 80px);
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+    font-family: 'Fredoka One', cursive;
+    background: orange;
+    border: none;
+    border-radius: 30px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    margin-top: 60vh; 
+    touch-action: manipulation;
+  }
+  
+  button:hover {
+    transform: scale(1.05);
+    background: blueviolet;
+  }
+  
+  button:active {
+    transform: scale(0.95);
+  }
+  
+  @media (max-width: 768px) {
+    button {
+      margin-top: 60vh;
+    }
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  @supports (-webkit-touch-callout: none) {
+    #game-container, .overlay {
+      height: -webkit-fill-available;
+    }
+  }
+  
+  @media (max-height: 500px) and (orientation: landscape) {
+    .overlay {
+      justify-content: flex-start;
+      padding-top: 20px;
+    }
+  
+    button {
+      margin-top: 20px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    #game-container {
+      background-attachment: scroll;
+    }
+  
+    .balloon {
+      touch-action: manipulation;
+    }
+  
+    #hud {
+      width: 90%;
+      padding: 8px 15px;
+    }
+  }
+  
+  #custom-cursor {
+    position: fixed;
+    width: 70px;
+    height: 70px;
+    background-image: url('https://jerinrubaiya33.github.io/Pics/hand.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+  }
+  .bird {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background-image: url('https://jerinrubaiya33.github.io/Pics/bird-cartoon-colored-clipart-illustration.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    z-index: 1000;
+    transition: transform 0.1s ease-in-out; /* Faster transition */
+  }
+  
+  .bird-left {
+    transform: scaleX(1);
+  }
+  
+  .bird-right {
+    transform: scaleX(-1);
+  }
+  
+  /* Mobile-Friendly Adjustments */
+  @media (max-width: 768px) {
+    .bird {
+      width: 50px; /* Smaller bird for smaller screens */
+      height: 50px;
+    }
+  }
+  
+  .game-over-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  color: white;
+  font-size: 3rem;
+  font-family: 'Fredoka One', cursive;
+  }
