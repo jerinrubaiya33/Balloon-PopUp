@@ -14,7 +14,6 @@ class BalloonGame {
 
         this.initAudio();
         this.bindEvents();
-        this.initCustomCursor();
 
         const style = document.createElement('style');
         style.textContent = `
@@ -147,6 +146,15 @@ class BalloonGame {
         this.balloonContainer.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.handleInteraction(e.touches[0]);
+        });
+        document.addEventListener('mousemove', (e) => {
+            this.currentMouseX = e.clientX;
+            this.currentMouseY = e.clientY;
+
+            if (this.isPlaying && this.checkBirdCollision(e.clientX, e.clientY)) {
+                this.playSound('birdHit');
+                this.gameOver("Game Over! You touched a bird!");
+            }
         });
     }
 
@@ -406,44 +414,6 @@ class BalloonGame {
         }, this.birdSpawnInterval);
     }
 
-    initCustomCursor() {
-        const cursor = document.getElementById('custom-cursor');
-        if (!cursor || !this.gameContainer) return;
-    
-        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    
-        if (isTouchDevice) {
-            this.gameContainer.classList.remove('hide-cursor');
-            cursor.style.display = 'none';
-
-            document.addEventListener('touchmove', (e) => {
-                if (!this.isPlaying) return;
-                const touch = e.touches[0];
-                if (this.checkBirdCollision(touch.clientX, touch.clientY)) {
-                    this.playSound('birdHit');
-                    this.gameOver("Game Over! You touched a bird!");
-                }
-            }, { passive: true });
-            return;
-        }
-    
-        this.gameContainer.classList.add('hide-cursor');
-        cursor.style.display = 'block';
-    
-        document.addEventListener('mousemove', (e) => {
-            this.currentMouseX = e.clientX;
-            this.currentMouseY = e.clientY;
-
-            cursor.style.left = `${e.clientX}px`;
-            cursor.style.top = `${e.clientY}px`;
-
-            if (this.isPlaying && this.checkBirdCollision(e.clientX, e.clientY)) {
-                this.playSound('birdHit');
-                this.gameOver("Game Over! You touched a bird!");
-            }
-        });
-    }
-    
     createRainEffect() {
         const oldRain = document.getElementById('rain-container');
         if (oldRain) oldRain.remove();

@@ -25,11 +25,6 @@ body {
   overflow: hidden;
 }
 
-#game-container.hide-cursor,
-#game-container.hide-cursor * {
-  cursor: none !important;
-}
-
 /* ==========================================================================
    2. GAME HUD & OVERLAYS
    ========================================================================== */
@@ -187,19 +182,6 @@ button:hover {
 
 button:active {
   transform: scale(0.95);
-}
-
-#custom-cursor {
-  position: fixed;
-  width: 60px;
-  height: 60px;
-  background-image: url('https://jerinrubaiya33.github.io/Pics/hand.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  pointer-events: none;
-  transform: translate(-12px, -10px);
-  z-index: 10000;
-  display: none;
 }
 
 /* ==========================================================================
