@@ -16,16 +16,39 @@
         
         <div id="rain-container"></div>
         <div id="balloon-container"></div>
+
         <div id="start-screen" class="overlay">
             <button id="start-btn">Start Game</button>
         </div>
+
+        <div id="instructions-modal" class="overlay hidden">
+            <div class="modal-card">
+                <h2>How to Play</h2>
+                <div class="instruction-item">
+                    <span class="icon">🎈</span>
+                    <p>Pop the balloons to gain <strong>+1 point</strong>!</p>
+                </div>
+                <div class="instruction-item">
+                    <span class="icon">⚡</span>
+                    <p>Avoid the thunderstorm cloud! It destroys balloons and costs you <strong>-1 point</strong>.</p>
+                </div>
+                <div class="instruction-item">
+                    <span class="icon">🐦</span>
+                    <p><strong>CRITICAL:</strong> Do not touch the flying birds! Touching a bird results in an immediate <strong>Game Over!</strong></p>
+                </div>
+                <button id="play-btn">Let's Play!</button>
+            </div>
+        </div>
+
         <div id="game-over" class="overlay hidden">
-            <div id="final-score"></div>
-            <button id="restart-btn">Play Again</button>
+            <div class="score-box">
+                <h2>Game Over</h2>
+                <div id="final-score">Final Score: 0</div>
+                <button id="restart-btn">Play Again</button>
+            </div>
         </div>
     </div>
     <div id="custom-cursor"></div>
     <script src="Balloon.js"></script>
 </body>
 </html>
-
