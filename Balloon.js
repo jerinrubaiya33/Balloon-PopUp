@@ -30,7 +30,11 @@ class BalloonGame {
     }
 
     bindEvents() {
-        document.getElementById('start-btn').addEventListener('click', () => this.startGame());
+        // Step 1: Click "Start Game" shows instructions
+        document.getElementById('start-btn').addEventListener('click', () => this.showInstructions());
+        // Step 2: Click "Let's Play" starts actual gameplay
+        document.getElementById('play-btn').addEventListener('click', () => this.startGame());
+        // Game Over "Play Again" re-starts gameplay immediately
         document.getElementById('restart-btn').addEventListener('click', () => this.startGame());
 
         this.balloonContainer.addEventListener('click', (e) => this.handleInteraction(e));
@@ -38,6 +42,11 @@ class BalloonGame {
             e.preventDefault();
             this.handleInteraction(e.touches[0]);
         });
+    }
+
+    showInstructions() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('instructions-modal').classList.remove('hidden');
     }
 
     handleInteraction(event) {
@@ -62,7 +71,11 @@ class BalloonGame {
         this.updateTimer();
 
         document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('instructions-modal').classList.add('hidden');
         document.getElementById('game-over').classList.add('hidden');
+
+        const oldOverlay = document.querySelector('.game-over-overlay');
+        if (oldOverlay) oldOverlay.remove();
 
         this.clearBalloons();
         this.startSpawning();
@@ -76,6 +89,7 @@ class BalloonGame {
     }
 
     startSpawning() {
+        if (this.spawnInterval) clearInterval(this.spawnInterval);
         this.spawnInterval = setInterval(() => {
             if (this.isPlaying) {
                 this.spawnBalloon();
@@ -99,8 +113,6 @@ class BalloonGame {
 
         this.balloonContainer.appendChild(balloon);
 
-        this.showScoreIndicator(balloon, '+1', color);
-
         setTimeout(() => {
             if (balloon.parentNode) {
                 balloon.remove();
@@ -112,12 +124,13 @@ class BalloonGame {
         if (balloon.classList.contains('popping')) return;
 
         balloon.classList.add('popping');
-        const color = getComputedStyle(balloon).getPropertyValue('--balloon-color');
+        const color = getComputedStyle(balloon).getPropertyValue('--balloon-color') || '#FF6B6B';
+        
         this.createPopEffect(x, y, color);
         this.score += 1;
         this.updateScore();
 
-        this.showScoreIndicator(balloon, '+1', color);
+        this.showScoreIndicator(x, y, '+1', color);
 
         balloon.style.animation = 'pop 0.3s ease-out forwards';
         setTimeout(() => balloon.remove(), 300);
@@ -146,22 +159,23 @@ class BalloonGame {
     }
 
     startTimer() {
+        if (this.timerInterval) clearInterval(this.timerInterval);
         this.timerInterval = setInterval(() => {
             this.timeLeft--;
             this.updateTimer();
 
             if (this.timeLeft <= 0) {
-                this.gameOver();
+                this.gameOver("Time's Up!");
             }
         }, 1000);
     }
 
     updateScore() {
-        document.getElementById('score').textContent = `Score: ${this.score}`;
+        document.querySelector('#score span').textContent = this.score;
     }
 
     updateTimer() {
-        document.getElementById('timer').textContent = `Time: ${this.timeLeft}s`;
+        document.querySelector('#timer span').textContent = `${this.timeLeft}s`;
     }
 
     gameOver(message = "Game Over!") {
@@ -186,7 +200,10 @@ class BalloonGame {
         const rainContainer = document.getElementById('rain-container');
         if (rainContainer) rainContainer.remove();
 
-        if (this.thunderstorm) this.thunderstorm.remove();
+        if (this.thunderstorm) {
+            this.thunderstorm.remove();
+            this.thunderstorm = null;
+        }
     }
 
     createBird() {
@@ -195,18 +212,18 @@ class BalloonGame {
         const startFromLeft = Math.random() < 0.5;
         bird.classList.add(startFromLeft ? 'bird-left' : 'bird-right');
 
-        const startY = Math.random() * (window.innerHeight - 60);
+        const startY = Math.random() * (window.innerHeight - 100);
         bird.style.top = `${startY}px`;
-        bird.style.left = startFromLeft ? '-60px' : `${window.innerWidth}px`;
+        bird.style.left = startFromLeft ? '-80px' : `${window.innerWidth}px`;
 
         this.gameContainer.appendChild(bird);
 
         const birdObj = {
             element: bird,
             direction: startFromLeft ? 1 : -1,
-            speed: 1 + Math.random() * 3,
+            speed: 2 + Math.random() * 3,
             verticalDirection: Math.random() < 0.5 ? 1 : -1,
-            verticalSpeed: 0.5 + Math.random() * 2
+            verticalSpeed: 0.5 + Math.random() * 1.5
         };
 
         this.birds.push(birdObj);
@@ -220,7 +237,10 @@ class BalloonGame {
         let newX = birdRect.left + birdObj.direction * birdObj.speed;
         let newY = birdRect.top + birdObj.verticalDirection * birdObj.verticalSpeed;
 
-        if (newX <= -60 || newX >= window.innerWidth) {
+        if (birdObj.direction === 1 && newX > window.innerWidth) {
+            this.removeBird(birdObj);
+            return;
+        } else if (birdObj.direction === -1 && newX < -80) {
             this.removeBird(birdObj);
             return;
         }
@@ -231,6 +251,13 @@ class BalloonGame {
 
         birdObj.element.style.left = `${newX}px`;
         birdObj.element.style.top = `${newY}px`;
+
+        if (this.currentMouseX !== undefined && this.currentMouseY !== undefined) {
+            if (this.checkBirdCollision(this.currentMouseX, this.currentMouseY)) {
+                this.gameOver("Game Over! You touched a bird!");
+                return;
+            }
+        }
 
         requestAnimationFrame(() => this.moveBird(birdObj));
     }
@@ -247,10 +274,10 @@ class BalloonGame {
         return this.birds.some(birdObj => {
             const birdRect = birdObj.element.getBoundingClientRect();
             return (
-                x >= birdRect.left &&
-                x <= birdRect.right &&
-                y >= birdRect.top &&
-                y <= birdRect.bottom
+                x >= birdRect.left + 5 &&
+                x <= birdRect.right - 5 &&
+                y >= birdRect.top + 5 &&
+                y <= birdRect.bottom - 5
             );
         });
     }
@@ -261,6 +288,7 @@ class BalloonGame {
     }
     
     startBirdSpawning() {
+        if (this.birdSpawnIntervalId) clearInterval(this.birdSpawnIntervalId);
         this.birdSpawnIntervalId = setInterval(() => {
             if (this.isPlaying && this.birds.length < this.maxBirds) {
                 this.createBird();
@@ -270,33 +298,34 @@ class BalloonGame {
 
     initCustomCursor() {
         const cursor = document.getElementById('custom-cursor');
-        if (!cursor) {
-            console.error('Custom cursor element is missing in the HTML.');
-            return;
-        }
+        if (!cursor) return;
     
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-        // Hide the cursor on touch devices
         if (isTouchDevice) {
-            document.body.style.cursor = 'auto';  // Use default cursor for touch devices
-            cursor.style.display = 'none';  // Hide the custom cursor
-            document.body.addEventListener('touchstart', (e) => {
-                if (this.isPlaying && this.checkBirdCollision(e.touches[0].clientX, e.touches[0].clientY)) {
+            document.body.style.cursor = 'auto';
+            cursor.style.display = 'none';
+
+            document.addEventListener('touchmove', (e) => {
+                if (!this.isPlaying) return;
+                const touch = e.touches[0];
+                if (this.checkBirdCollision(touch.clientX, touch.clientY)) {
                     this.gameOver("Game Over! You touched a bird!");
                 }
-            });
+            }, { passive: true });
             return;
         }
     
-        // For desktop, show the custom cursor
         document.body.style.cursor = 'none';
         cursor.style.display = 'block';
     
         document.addEventListener('mousemove', (e) => {
+            this.currentMouseX = e.clientX;
+            this.currentMouseY = e.clientY;
+
             cursor.style.left = `${e.clientX}px`;
             cursor.style.top = `${e.clientY}px`;
-    
+
             if (this.isPlaying && this.checkBirdCollision(e.clientX, e.clientY)) {
                 this.gameOver("Game Over! You touched a bird!");
             }
@@ -304,11 +333,14 @@ class BalloonGame {
     }
     
     createRainEffect() {
+        const oldRain = document.getElementById('rain-container');
+        if (oldRain) oldRain.remove();
+
         const rainContainer = document.createElement('div');
         rainContainer.id = 'rain-container';
         this.gameContainer.appendChild(rainContainer);
 
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 60; i++) {
             const raindrop = document.createElement('div');
             raindrop.className = 'rain-drop';
             raindrop.style.left = `${Math.random() * 100}%`;
@@ -319,6 +351,8 @@ class BalloonGame {
     }
 
     createThunderstorm() {
+        if (this.thunderstorm) this.thunderstorm.remove();
+
         const thunderstorm = document.createElement('div');
         thunderstorm.className = 'thunderstorm';
         this.gameContainer.appendChild(thunderstorm);
@@ -326,7 +360,7 @@ class BalloonGame {
     }
 
     moveThunderstorm() {
-        if (!this.isPlaying) return;
+        if (!this.isPlaying || !this.thunderstorm) return;
 
         const thunderstormRect = this.thunderstorm.getBoundingClientRect();
         this.checkBalloonCollisionWithThunderstorm(thunderstormRect);
@@ -339,22 +373,25 @@ class BalloonGame {
         balloons.forEach(balloon => {
             const balloonRect = balloon.getBoundingClientRect();
             if (this.isColliding(balloonRect, thunderstormRect)) {
-                this.popBalloonByThunderstorm(balloon);
+                this.popBalloonByThunderstorm(balloon, balloonRect);
             }
         });
     }
 
-    popBalloonByThunderstorm(balloon) {
+    popBalloonByThunderstorm(balloon, balloonRect) {
         if (balloon.classList.contains('popping')) return;
 
         balloon.classList.add('popping');
-        const color = getComputedStyle(balloon).getPropertyValue('--balloon-color');
-        const balloonRect = balloon.getBoundingClientRect();
-        this.createPopEffect(balloonRect.left + balloonRect.width / 2, balloonRect.top + balloonRect.height / 2, color);
-        this.score -= 1;
+        const color = getComputedStyle(balloon).getPropertyValue('--balloon-color') || '#FF6B6B';
+        
+        const x = balloonRect.left + balloonRect.width / 2;
+        const y = balloonRect.top + balloonRect.height / 2;
+        
+        this.createPopEffect(x, y, color);
+        this.score = Math.max(0, this.score - 1);
         this.updateScore();
 
-        this.showScoreIndicator(balloon, '-1', color);
+        this.showScoreIndicator(x, y, '-1', color);
 
         balloon.style.animation = 'pop 0.3s ease-out forwards';
         setTimeout(() => balloon.remove(), 300);
@@ -372,23 +409,15 @@ class BalloonGame {
         balloons.forEach(balloon => balloon.remove());
     }
 
-    showScoreIndicator(balloon, text, color) {
+    showScoreIndicator(x, y, text, color) {
         const indicator = document.createElement('div');
         indicator.className = 'score-indicator';
         indicator.textContent = text;
         indicator.style.color = color;
-        indicator.style.position = 'absolute';
-        const balloonRect = balloon.getBoundingClientRect();
-        indicator.style.left = `${balloonRect.right}px`;
-        indicator.style.top = `${balloonRect.top + balloonRect.height / 2}px`;
-        indicator.style.fontSize = '24px';
-        indicator.style.fontWeight = 'bold';
-        indicator.style.pointerEvents = 'none';
-        indicator.style.animation = 'fadeOut 1s ease-out forwards';
-        indicator.style.transform = 'translateY(-50%)';
+        indicator.style.left = `${x}px`;
+        indicator.style.top = `${y}px`;
 
         this.gameContainer.appendChild(indicator);
-
         setTimeout(() => indicator.remove(), 1000);
     }
 }
