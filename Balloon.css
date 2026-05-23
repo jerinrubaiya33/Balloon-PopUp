@@ -25,6 +25,11 @@ body {
   overflow: hidden;
 }
 
+#game-container.hide-cursor,
+#game-container.hide-cursor * {
+  cursor: none !important;
+}
+
 /* ==========================================================================
    2. GAME HUD & OVERLAYS
    ========================================================================== */

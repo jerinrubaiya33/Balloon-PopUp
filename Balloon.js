@@ -408,12 +408,12 @@ class BalloonGame {
 
     initCustomCursor() {
         const cursor = document.getElementById('custom-cursor');
-        if (!cursor) return;
+        if (!cursor || !this.gameContainer) return;
     
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
         if (isTouchDevice) {
-            document.body.style.cursor = 'auto';
+            this.gameContainer.classList.remove('hide-cursor');
             cursor.style.display = 'none';
 
             document.addEventListener('touchmove', (e) => {
@@ -427,9 +427,7 @@ class BalloonGame {
             return;
         }
     
-        // Safer way to hide standard cursor while preventing document text leak
-        document.documentElement.style.cursor = 'none';
-        document.body.style.cursor = 'none';
+        this.gameContainer.classList.add('hide-cursor');
         cursor.style.display = 'block';
     
         document.addEventListener('mousemove', (e) => {
