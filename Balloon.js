@@ -427,6 +427,11 @@ class BalloonGame {
             return;
         }
     
+<<<<<<< HEAD
+=======
+        // Safer way to hide standard cursor while preventing document text leak
+        document.documentElement.style.cursor = 'none';
+>>>>>>> ee58228 (s)
         document.body.style.cursor = 'none';
         cursor.style.display = 'block';
     
