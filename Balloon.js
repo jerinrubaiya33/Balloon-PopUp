@@ -12,6 +12,7 @@ class BalloonGame {
         this.maxBirds = 3;
         this.birdSpawnInterval = 3000;
 
+        this.initAudio();
         this.bindEvents();
         this.initCustomCursor();
 
@@ -29,12 +30,117 @@ class BalloonGame {
         document.head.appendChild(style);
     }
 
+    initAudio() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.audioCtx = null;
+        const setupContext = () => {
+            if (!this.audioCtx) {
+                this.audioCtx = new AudioContext();
+            }
+        };
+        document.addEventListener('click', setupContext, { once: true });
+        document.addEventListener('touchstart', setupContext, { once: true });
+    }
+
+    playSound(type) {
+        if (!this.audioCtx) return;
+        if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+        const now = this.audioCtx.currentTime;
+
+        if (type === 'pop') {
+            const sampleRate = this.audioCtx.sampleRate;
+            const noiseDuration = 0.06;
+            const bufferSize = sampleRate * noiseDuration;
+            const buffer = this.audioCtx.createBuffer(1, bufferSize, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noiseSource = this.audioCtx.createBufferSource();
+            noiseSource.buffer = buffer;
+
+            const lowPass = this.audioCtx.createBiquadFilter();
+            lowPass.type = 'lowpass';
+            lowPass.frequency.setValueAtTime(400, now); 
+            lowPass.frequency.exponentialRampToValueAtTime(100, now + noiseDuration);
+
+            const noiseGain = this.audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.4, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + noiseDuration);
+
+            noiseSource.connect(lowPass);
+            lowPass.connect(noiseGain);
+            noiseGain.connect(this.audioCtx.destination);
+            
+            noiseSource.start(now);
+            noiseSource.stop(now + noiseDuration);
+
+            const thudOsc = this.audioCtx.createOscillator();
+            const thudGain = this.audioCtx.createGain();
+            thudOsc.type = 'sine';
+            thudOsc.frequency.setValueAtTime(130, now);
+            thudOsc.frequency.exponentialRampToValueAtTime(50, now + 0.05);
+            thudGain.gain.setValueAtTime(0.5, now);
+            thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            thudOsc.connect(thudGain);
+            thudGain.connect(this.audioCtx.destination);
+            thudOsc.start(now);
+            thudOsc.stop(now + 0.05);
+
+        } else if (type === 'zap') {
+            const osc = this.audioCtx.createOscillator();
+            const gain = this.audioCtx.createGain();
+            const filter = this.audioCtx.createBiquadFilter();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(120, now);
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(200, now);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.3);
+
+        } else if (type === 'birdHit') {
+            [220, 261.63, 329.63].forEach((freq) => {
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            });
+        } else if (type === 'timeUp') {
+            const chimeNotes = [261.63, 329.63, 392.00, 523.25];
+            chimeNotes.forEach((freq, index) => {
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                const noteTime = now + (index * 0.12);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, noteTime);
+                gain.gain.setValueAtTime(0.15, noteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.4);
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.start(noteTime);
+                osc.stop(noteTime + 0.4);
+            });
+        }
+    }
+
     bindEvents() {
-        // Step 1: Click "Start Game" shows instructions
         document.getElementById('start-btn').addEventListener('click', () => this.showInstructions());
-        // Step 2: Click "Let's Play" starts actual gameplay
         document.getElementById('play-btn').addEventListener('click', () => this.startGame());
-        // Game Over "Play Again" re-starts gameplay immediately
         document.getElementById('restart-btn').addEventListener('click', () => this.startGame());
 
         this.balloonContainer.addEventListener('click', (e) => this.handleInteraction(e));
@@ -53,6 +159,7 @@ class BalloonGame {
         if (!this.isPlaying) return;
 
         if (this.checkBirdCollision(event.clientX, event.clientY)) {
+            this.playSound('birdHit');
             this.gameOver("Game Over! You touched a bird!");
             return;
         }
@@ -126,6 +233,7 @@ class BalloonGame {
         balloon.classList.add('popping');
         const color = getComputedStyle(balloon).getPropertyValue('--balloon-color') || '#FF6B6B';
         
+        this.playSound('pop');
         this.createPopEffect(x, y, color);
         this.score += 1;
         this.updateScore();
@@ -165,6 +273,7 @@ class BalloonGame {
             this.updateTimer();
 
             if (this.timeLeft <= 0) {
+                this.playSound('timeUp');
                 this.gameOver("Time's Up!");
             }
         }, 1000);
@@ -254,6 +363,7 @@ class BalloonGame {
 
         if (this.currentMouseX !== undefined && this.currentMouseY !== undefined) {
             if (this.checkBirdCollision(this.currentMouseX, this.currentMouseY)) {
+                this.playSound('birdHit');
                 this.gameOver("Game Over! You touched a bird!");
                 return;
             }
@@ -310,6 +420,7 @@ class BalloonGame {
                 if (!this.isPlaying) return;
                 const touch = e.touches[0];
                 if (this.checkBirdCollision(touch.clientX, touch.clientY)) {
+                    this.playSound('birdHit');
                     this.gameOver("Game Over! You touched a bird!");
                 }
             }, { passive: true });
@@ -327,6 +438,7 @@ class BalloonGame {
             cursor.style.top = `${e.clientY}px`;
 
             if (this.isPlaying && this.checkBirdCollision(e.clientX, e.clientY)) {
+                this.playSound('birdHit');
                 this.gameOver("Game Over! You touched a bird!");
             }
         });
@@ -387,6 +499,7 @@ class BalloonGame {
         const x = balloonRect.left + balloonRect.width / 2;
         const y = balloonRect.top + balloonRect.height / 2;
         
+        this.playSound('zap');
         this.createPopEffect(x, y, color);
         this.score = Math.max(0, this.score - 1);
         this.updateScore();
